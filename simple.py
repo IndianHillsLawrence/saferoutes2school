@@ -2,23 +2,53 @@ import psycopg2
 conn = psycopg2.connect("dbname=indianhills user=mdupont")
 cur = conn.cursor()
 cur2 = conn.cursor()
+cur3 = conn.cursor()
 
 cur.execute("""
-SELECT a.id, b.* FROM ways_vertices_pgr as a INNER JOIN place as b ON (ST_intersects(a.the_geom, b.geometry))
+Create table if not exists school_route(from_vertex bigint, osm_id bigint, sourcepoint bigint, target_point bigint, leg_cost double precision,  geom geometry(Point,4326));
+""")
+
+cur.execute("""
+SELECT a.id as vertexid, b.osm_id as placeid FROM ways_vertices_pgr as a INNER JOIN place as b ON (ST_intersects(a.the_geom, b.geometry))
 """)
 for record in cur:
     aid = record[0]
+
+    #      1     2       3      4        5
+
     cur2.execute("""
     SELECT * FROM pgr_dijkstra(
-    'SELECT gid AS id, source::integer, target::integer, length::double precision AS cost, the_geom FROM ways',       
+    'SELECT gid AS id, source::integer as source, target::integer as target, length::double precision AS cost, the_geom FROM ways',       
     %s,       1590,       false,       false) 
     """ % (aid));
     total = 0
+
     for r2 in cur2:
-        #print aid, r2
+        print record
+        print r2
+
         cost = r2[3]
         total = total + cost
-        #  0     1      2              3   4        5     6    7       8        9          
-        #(146L, 'W', 218675135L, 'place', 'house', None, 100, '2300', None, 'Barker Avenue', None, 'Lawrence', '66046', None, None, '0103000020E6100000010000002E00000022B4D43032CF57C07A5567B5C0774340B157B32932CF57C0636A0190C977434081BC0D2032CF57C0B7CDF9CED47743406F7F2E1A32CF57C072361D01DC7743405D424F1432CF57C0C15E1734E37743401665DB0E32CF57C02FBA6180E9774340CF87670932CF57C09D15ACCCEF77434093CBDA0132CF57C0C29E1B3FF97743404CEE66FC31CF57C09B3A8F8AFF7743400411F3F631CF57C00996D9D6057843408793EAF131CF57C077F123230C78434040B676EC31CF57C0E54C6E6F12784340C3386EE731CF57C053A8B8BB187843407B5BFAE131CF57C0C00303081F784340D55E44DB31CF57C05D39D620277843404C22B19330CF57C026A4DA4C2A7843405B83520F2CCF57C087A757CA32784340491BFD1E2BCF57C04E34FE33397843402BBD361B2BCF57C07BFA63B5547843403BF59210F6CE57C0114AA99553784340A64CC521F6CE57C00805002258784340F9331713F6CE57C0DFEAEF5B6378434070952710F6CE57C0522B4CDF6B78434070952710F6CE57C062D284926E7843401F1329CDE6CE57C0D4BB783F6E7843401F1329CDE6CE57C030E8CE5D5C7843401F1329CDE6CE57C086127706577843401FTraceback (most recent call last):
-    print record[0], record[7], record[9], total
+        cmd = """insert into school_route (from_vertex, osm_id, sourcepoint, target_point , leg_cost) values (%s,%s,%s,%s,%s)""" % (
+            record[0], 
+            record[1],
+            r2[1],
+            r2[2],
+            r2[3],
+        )
+        print cmd
+        cur3.execute(cmd     )
+        conn.commit()
+
+    
+
+# now create at table for postgis an include the geometry
+# we could include that directly in the school route table as well
+cur.execute("""
+drop table school_ways;
+""")
+        
+cur.execute("""
+create table school_ways as select c.leg_cost, a.* from school_route c, ways a where c.target_point = a.gid;
+""")
 
