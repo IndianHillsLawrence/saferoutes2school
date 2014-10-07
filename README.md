@@ -35,7 +35,9 @@ osm2pgsql
 
 Run another type of import, because we want to get more attributes
 ./osm2pgsql  -S default.style -d indianhills -c inputdata.osm
-  
+
+The default.style is modified https://github.com/h4ck3rm1k3/osm2pgsql see branch safe-routes-to-school
+
 import osm data via Nominatim 
 =============================
 
