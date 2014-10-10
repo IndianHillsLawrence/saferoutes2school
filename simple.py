@@ -92,8 +92,9 @@ def process_school(bid, osm_id):
     cur = conn.cursor()
     cur2 = conn.cursor()
     cur3 = conn.cursor()
+    # just calculate to each routing point, dont worry about places for now, we can add them later 
     cur.execute("""
-    SELECT a.id as vertexid, b.osm_id as placeid FROM ways_vertices_pgr as a INNER JOIN place as b ON (ST_intersects(a.the_geom, b.geometry))
+    SELECT id from ways_vertices_pgr 
     """)
     for record in cur:
         aid = record[0]
@@ -121,18 +122,15 @@ def process_school(bid, osm_id):
             cmd = """insert into school_route (
             from_vertex, 
             to_vertex, 
-            from_osm_id, 
             sourcepoint, 
             target_point , 
             leg_cost) values (
-            %s, 
             %s, 
             %s,
             %s,
             %s,
             %s)""" % (
-                record[0], 
-                record[1],
+                record[0],                 
                 osm_id,
                 row_id1,
                 row_id2,
@@ -153,7 +151,6 @@ def create_school_route():
     Create table if not exists school_route(
     from_vertex bigint, 
     to_vertex bigint, 
-    from_osm_id bigint, 
     sourcepoint bigint, 
     target_point bigint, 
     leg_cost double precision);
