@@ -60,3 +60,26 @@ sudo php5enmod pgsql
 Queries
 =======
 
+ create view veschool as SELECT place.name -> 'name'::text AS sname,
+    place.osm_type,
+    place.osm_id,
+    place.class,
+    place.type,
+    place.name,
+    place.admin_level,
+    place.housenumber,
+    place.suitenumber,
+    place.street,
+    place.addr_place,
+    place.isin,
+    place.postcode,
+    place.country_code,
+    place.extratags,
+    place.geometry    
+   FROM place
+  WHERE place.type = 'school'::text
+  and place.name -> 'name'::text not like '%histor%'
+  and place.name -> 'name'::text  like '%Element%';
+
+
+SELECT DISTINCT ON(g1.osm_id)g1.osm_id As gref_gid, g1.sname As gref_description, g2.osm_id As gnn_gid, g2.sname As gnn_description , ST_Distance(g1.geometry,g2.geometry)  FROM veschools As g1, veschools As g2  WHERE g1.osm_id <> g2.osm_id AND ST_DWithin(g1.geometry, g2.geometry, 300) and ST_Distance(g1.geometry, g2.geometry) > 0.001  and ORDER BY g1.osm_id, ST_Distance(g1.geometry,g2.geometry) ;
