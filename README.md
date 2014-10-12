@@ -83,3 +83,113 @@ Queries
 
 
 SELECT DISTINCT ON(g1.osm_id)g1.osm_id As gref_gid, g1.sname As gref_description, g2.osm_id As gnn_gid, g2.sname As gnn_description , ST_Distance(g1.geometry,g2.geometry)  FROM veschools As g1, veschools As g2  WHERE g1.osm_id <> g2.osm_id AND ST_DWithin(g1.geometry, g2.geometry, 300) and ST_Distance(g1.geometry, g2.geometry) > 0.001  and ORDER BY g1.osm_id, ST_Distance(g1.geometry,g2.geometry) ;
+
+ SELECT c.from_vertex,
+    c.leg_cost,
+    a.gid,
+    a.class_id,
+    a.length,
+    a.name,
+    a.x1,
+    a.y1,
+    a.x2,
+    a.y2,
+    a.reverse_cost,
+    a.rule,
+    a.to_cost,
+    a.maxspeed_forward,
+    a.maxspeed_backward,
+    a.osm_id,
+    a.priority,
+    a.the_geom,
+    a.source,
+    a.target
+   FROM school_route c,
+    ways a
+  WHERE c.target_point = a.gid;
+
+Indexes
+=======
+
+create index school_route_from_to on school_route (from_vertex, to_vertex);
+create index school_route_from on school_route (from_vertex);
+create index school_route_to on school_route (to_vertex);
+create index  ways_vertices_pgr_id on     ways_vertices_pgr (id);
+
+ways table
+==========
+                                        Table "public.ways"
+      Column       |           Type            | Modifiers | Storage  | Stats target | Description 
+-------------------+---------------------------+-----------+----------+--------------+-------------
+ gid               | integer                   |           | plain    |              | 
+ class_id          | integer                   | not null  | plain    |              | 
+ length            | double precision          |           | plain    |              | 
+ name              | text                      |           | extended |              | 
+ x1                | double precision          |           | plain    |              | 
+ y1                | double precision          |           | plain    |              | 
+ x2                | double precision          |           | plain    |              | 
+ y2                | double precision          |           | plain    |              | 
+ reverse_cost      | double precision          |           | plain    |              | 
+ rule              | text                      |           | extended |              | 
+ to_cost           | double precision          |           | plain    |              | 
+ maxspeed_forward  | integer                   |           | plain    |              | 
+ maxspeed_backward | integer                   |           | plain    |              | 
+ osm_id            | bigint                    |           | plain    |              | 
+ priority          | double precision          | default 1 | plain    |              | 
+ the_geom          | geometry(LineString,4326) |           | main     |              | 
+ source            | integer                   |           | plain    |              | 
+ target            | integer                   |           | plain    |              | 
+Indexes:
+    "ways_gid_idx" UNIQUE, btree (gid)
+    "geom_idx" gist (the_geom)
+    "source_idx" btree (source)
+    "target_idx" btree (target)
+
+
+school_route
+============
+                            Table "public.school_route"
+    Column    |       Type       | Modifiers | Storage | Stats target | Description 
+--------------+------------------+-----------+---------+--------------+-------------
+ from_vertex  | bigint           |           | plain   |              | 
+ to_vertex    | bigint           |           | plain   |              | 
+ sourcepoint  | bigint           |           | plain   |              | 
+ target_point | bigint           |           | plain   |              | 
+ leg_cost     | double precision |           | plain   |              | 
+Indexes:
+    "school_route_from" btree (from_vertex)
+    "school_route_from_to" btree (from_vertex, to_vertex)
+    "school_route_to" btree (to_vertex)
+
+
+select w.source, count(*) from school_route r, ways w where w.gid=r.sourcepoint
+group by w.source order by count(*);
+
+the most used points
+====================
+
+create view most_used_points as select
+    rp.the_geom,
+    count(*)
+from
+    school_route r,
+    ways w,
+    ways_vertices_pgr rp
+where
+    w.gid=r.sourcepoint
+    and
+    rp.id = w.source    
+group by rp.the_geom
+order by count(*);
+
+create table most_used_points_t as select * from most_used_points;
+
+
+
+
+create view v_school_route_sum as select c.to_vertext, c.from_vertex, sum(c.leg_cost) from school_route c group by c.from_vertex, c.to_vertex;
+drop table v_school_route2;
+create table v_school_route2 as select * from v_school_route;
+
+[22265L, 17269L, 19871L]
+p 2848, s 19871
