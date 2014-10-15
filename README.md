@@ -193,3 +193,31 @@ create table v_school_route2 as select * from v_school_route;
 
 [22265L, 17269L, 19871L]
 p 2848, s 19871
+
+Simple list of schools
+======================
+
+create table schools_2 as select
+     osm_id,
+     "isced:level",
+     "addr:housename",
+     "addr:housenumber",
+     name,
+     ST_Centroid(ST_Transform(way,4326)) as the_geom
+     from  
+     planet_osm_point
+
+     where "isced:level" is not null;
+
+
+
+create view vschool as select
+     osm_id,
+     "isced:level",
+     "addr:housename",
+     "addr:housenumber",
+     name,
+     ST_asText(ST_Centroid(ST_Transform(way,4326))) as the_geom
+     from  
+     planet_osm_point
+     where "isced:level" = '1' ;

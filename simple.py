@@ -212,6 +212,8 @@ def create_school_route():
     cur = conn.cursor()
     #cur.execute("""drop table school_route;""")
 
+    cur.execute("""delete from table school_route;""")
+
     cur.execute("""
     Create table if not exists school_route(
     from_vertex bigint, 
@@ -628,7 +630,7 @@ where
     s.id in (%s)
 order by 
     ST_Distance(s.the_geom,rp.the_geom)
-    limit 3
+    limit 5
     ;
     """ % (
         rpid, 
@@ -682,6 +684,7 @@ def process_all_points():
                                   l['row_cost']
                               )
                 #raise Exception()
+
 
 # main routing
 process_all_points()
